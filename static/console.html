@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QAIC UC016 — Quantum Fraud Detection Laboratory Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="/static/chart.umd.min.js"></script>
+  <script>
+    if (typeof Chart === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"><\/script>');
+    }
+  </script>
+  <style>
+    :root {
+      --bg-base: #12162B;
+      --bg-panel: #1B2140;
+      --bg-panel-alt: #161B36;
+      --bg-subtle: #141930;
+      --border-panel: #262E54;
+      --border-bright: #384375;
+      --quantum: #E8A855;
+      --quantum-dim: #996D32;
+      --quantum-subtle: rgba(232, 168, 85, 0.12);
+      --classical: #4FD1C5;
+      --classical-dim: #2C7871;
+      --classical-subtle: rgba(79, 209, 197, 0.12);
+      --text-primary: #E9EBF5;
+      --text-secondary: #7B85A6;
+      --text-muted: #535C7E;
+      --alert-danger: #FF5C5C;
+      --alert-danger-bg: rgba(255, 92, 92, 0.14);
+      --alert-safe: #4FD1C5;
+      --alert-safe-bg: rgba(79, 209, 197, 0.14);
+      --status-neutral: #8692B8;
+      --radius-sm: 3px;
+      --radius-md: 4px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.45;
+      padding: 16px 24px 48px;
+      font-size: 13px;
+    }
+
+    .mono {
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* Top Console Header */
+    .console-header {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-panel);
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .console-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-badge {
+      background: var(--bg-base);
+      border: 1px solid var(--border-bright);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      color: var(--quantum);
+      font-weight: 600;
+    }
+
+    .console-title h1 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .console-title p {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .telemetry-strip {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .telemetry-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .telemetry-label {
+      font-size: 9.5px;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .telemetry-value {
+      font-size: 11.5px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--text-primary);
+    }
+
+    .telemetry-value.live {
+      color: var(--classical);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .led-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--classical);
+      display: inline-block;
+      box-shadow: 0 0 6px var(--classical);
+      animation: pulse-led 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-led {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    /* Grid Layout */
+    .dashboard-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .row-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 1040px) {
+      .row-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Panel Base */
+    .instrument-panel {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-panel);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      background-color: var(--bg-panel-alt);
+      border-bottom: 1px solid var(--border-panel);
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-tag {
+      font-size: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--text-secondary);
+      background: var(--bg-base);
+      border: 1px solid var(--border-panel);
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .panel-body {
+      padding: 14px;
+    }
+
+    /* ========================================================= */
+    /* PART 6: BEFORE/AFTER TUNING STORY - PROMINENT SECTION    */
+    /* ========================================================= */
+    .tuning-section {
+      border: 1px solid var(--border-bright);
+      background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-alt) 100%);
+    }
+
+    .tuning-container {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    @media (max-width: 900px) {
+      .tuning-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .tuning-narrative {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .tuning-narrative h2 {
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tuning-narrative .highlight-text {
+      color: var(--quantum);
+      font-weight: 500;
+    }
+
+    .tuning-narrative .diagnostic-note {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: var(--bg-base);
+      border-left: 2px solid var(--quantum);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 11px;
+      color: var(--text-primary);
+    }
+
+    .tuning-gauges {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .gauge-track-container {
+      background: var(--bg-base);
+      border: 1px solid var(--border-panel);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+    }
+
+    .gauge-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+
+    .gauge-name {
+      font-size: 11.5px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .gauge-specs {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .gauge-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .bar-shell {
+      position: relative;
+      height: 14px;
+      background: #0E1222;
+      border: 1px solid #1E2547;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bar-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--text-muted);
+      padding: 0 1px;
+    }
+
+    .fill-before {
+      background: var(--text-muted);
+    }
+
+    .fill-after {
+      background: var(--quantum);
+      box-shadow: 0 0 10px rgba(232, 168, 85, 0.4);
+    }
+
+    .fill-classical {
+      background: var(--classical);
+      box-shadow: 0 0 10px rgba(79, 209, 197, 0.3);
+    }
+
+    .recovery-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: var(--quantum-subtle);
+      border: 1px solid var(--quantum-dim);
+      border-radius: var(--radius-sm);
+      font-size: 11.5px;
+      margin-top: 4px;
+    }
+
+    .recovery-label {
+      color: var(--quantum);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .recovery-delta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* ========================================================= */
+    /* PART 4 & 5: LIVE TRANSACTION SCORER & DECISION            */
+    /* ========================================================= */
+    .presets-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      background: var(--bg-base);
+      border: 1px solid var(--border-panel);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 11.5px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .preset-btn:hover {
+      border-color: var(--border-bright);
+      background: var(--bg-panel-alt);
+    }
+
+    .preset-btn.active {
+      border-color: var(--quantum);
+      background: var(--quantum-subtle);
+      color: var(--text-primary);
+    }
+
+    .preset-btn.borderline-btn {
+      border-color: #5D3E8C;
+    }
+    .preset-btn.borderline-btn:hover {
+      border-color: #9066CC;
+    }
+    .preset-btn.borderline-btn.active {
+      border-color: #E8A855;
+      background: rgba(232, 168, 85, 0.14);
+    }
+
+    .tag-indicator {
+      font-size: 9px;
+      font-family: 'IBM Plex Mono', monospace;
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-weight: 600;
+    }
+
+    .tag-indicator.fraud {
+      background: var(--alert-danger-bg);
+      color: var(--alert-danger);
+    }
+
+    .tag-indicator.normal {
+      background: var(--classical-subtle);
+      color: var(--classical);
+    }
+
+    .tag-indicator.edge {
+      background: var(--quantum-subtle);
+      color: var(--quantum);
+    }
+
+    /* Feature Inputs Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .feature-field {
+      background: var(--bg-base);
+      border: 1px solid var(--border-panel);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .feature-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .feature-input {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      outline: none;
+      width: 100%;
+    }
+
+    .feature-input:focus {
+      color: #FFFFFF;
+    }
+
+    .control-actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      padding-top: 4px;
+      border-top: 1px solid var(--border-panel);
+    }
+
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    .custom-check {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .custom-check input {
+      accent-color: var(--quantum);
+      cursor: pointer;
+    }
+
+    .action-btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .exec-btn {
+      background: var(--bg-base);
+      color: var(--quantum);
+      border: 1px solid var(--quantum);
+      padding: 8px 18px;
+      font-size: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.3px;
+      transition: all 0.15s ease;
+    }
+
+    .exec-btn:hover {
+      background: var(--quantum);
+      color: #12162B;
+      box-shadow: 0 0 12px rgba(232, 168, 85, 0.3);
+    }
+
+    .exec-btn:active {
+      transform: scale(0.98);
+    }
+
+    .reset-btn {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-panel);
+      padding: 8px 12px;
+      font-size: 11.5px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .reset-btn:hover {
+      border-color: var(--border-bright);
+      color: var(--text-primary);
+    }
+
+    /* Decision Annunciator */
+    .decision-display {
+      background: var(--bg-base);
+      border: 1px solid var(--border-panel);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .channels-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 550px) {
+      .channels-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .channel-box {
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      border: 1px solid var(--border-panel);
+      background: var(--bg-panel);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .channel-box.channel-quantum {
+      border-left: 3px solid var(--quantum);
+    }
+
+    .channel-box.channel-classical {
+      border-left: 3px solid var(--classical);
+    }
+
+    .channel-label {
+      font-size: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .channel-score-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin: 3px 0;
+    }
+
+    .channel-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .channel-quantum .channel-value {
+      color: var(--quantum);
+    }
+
+    .channel-classical .channel-value {
+      color: var(--classical);
+    }
+
+    .verdict-tag {
+      font-size: 11px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 2px;
+      letter-spacing: 0.5px;
+    }
+
+    .verdict-tag.verdict-fraud {
+      background: var(--alert-danger-bg);
+      color: var(--alert-danger);
+      border: 1px solid rgba(255, 92, 92, 0.4);
+    }
+
+    .verdict-tag.verdict-legit {
+      background: var(--alert-safe-bg);
+      color: var(--alert-safe);
+      border: 1px solid rgba(79, 209, 197, 0.4);
+    }
+
+    .channel-sub {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* Convergence / Divergence Bar */
+    .agreement-indicator {
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-family: 'IBM Plex Mono', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-panel);
+    }
+
+    .agreement-indicator.divergence {
+      background: rgba(232, 168, 85, 0.12);
+      border: 1px solid var(--quantum-dim);
+      color: var(--quantum);
+    }
+
+    .agreement-indicator.convergence {
+      background: rgba(79, 209, 197, 0.08);
+      border: 1px solid var(--classical-dim);
+      color: var(--classical);
+    }
+
+    /* Final Decision Banner */
+    .final-decision-box {
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid transparent;
+    }
+
+    .final-decision-box.flagged {
+      background: var(--alert-danger-bg);
+      border-color: rgba(255, 92, 92, 0.5);
+      color: var(--alert-danger);
+    }
+
+    .final-decision-box.cleared {
+      background: var(--alert-safe-bg);
+      border-color: rgba(79, 209, 197, 0.5);
+      color: var(--alert-safe);
+    }
+
+    .final-title-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .final-eyebrow {
+      font-size: 9.5px;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+
+    .final-status {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .policy-tag {
+      font-size: 10.5px;
+      font-family: 'IBM Plex Mono', monospace;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px 8px;
+      border-radius: 2px;
+    }
+
+    .decision-explanation {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      padding: 6px 8px;
+      background: var(--bg-panel);
+      border-left: 2px solid var(--border-bright);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    /* PART 8: Voice Controls */
+    .voice-controls-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .voice-btn {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-panel);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 11.5px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .voice-btn.quantum-voice {
+      border-color: var(--quantum-dim);
+      color: var(--quantum);
+    }
+    .voice-btn.quantum-voice:hover {
+      background: var(--quantum-subtle);
+    }
+
+    .voice-btn.classical-voice {
+      border-color: var(--classical-dim);
+      color: var(--classical);
+    }
+    .voice-btn.classical-voice:hover {
+      background: var(--classical-subtle);
+    }
+
+    .voice-btn:active {
+      transform: scale(0.98);
+    }
+
+    .voice-btn.speaking {
+      background: #FFFFFF;
+      color: #12162B;
+      font-weight: 600;
+    }
+
+    .speech-status-msg {
+      font-size: 11px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--text-muted);
+    }
+
+    /* ========================================================= */
+    /* PART 7: ROC COMPARISON CHART                             */
+    /* ========================================================= */
+    .chart-panel-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chart-container-box {
+      position: relative;
+      width: 100%;
+      height: 290px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-panel);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+    }
+
+    .roc-metrics-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .roc-metrics-table th {
+      text-align: left;
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--border-panel);
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .roc-metrics-table td {
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--border-panel);
+    }
+
+    .roc-metrics-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .curve-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    /* ========================================================= */
+    /* PART 10: LANGGRAPH AGENT TRACE                           */
+    /* ========================================================= */
+    .agent-trace-steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 880px) {
+      .agent-trace-steps {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .agent-trace-steps {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .trace-node-card {
+      background: var(--bg-base);
+      border: 1px solid var(--border-panel);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .node-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .node-elapsed {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      color: var(--classical);
+    }
+
+    .node-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.35;
+    }
+
+    .node-output-json {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-panel);
+      padding: 4px 6px;
+      border-radius: 2px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      max-height: 70px;
+      overflow-y: auto;
+    }
+
+    /* ========================================================= */
+    /* PART 11: HISTORY / RECENT TRANSACTIONS                   */
+    /* ========================================================= */
+    .history-table-container {
+      background: var(--bg-base);
+      border: 1px solid var(--border-panel);
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+      font-family: 'IBM Plex Mono', monospace;
+      text-align: left;
+    }
+
+    .history-table th {
+      background: var(--bg-panel-alt);
+      color: var(--text-muted);
+      font-weight: 500;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border-panel);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .history-table td {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border-panel);
+      color: var(--text-secondary);
+    }
+
+    .history-table tr:hover td {
+      background: var(--bg-panel);
+      color: var(--text-primary);
+    }
+
+    .footer-telemetry {
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-panel);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .clear-history-btn {
+      background: transparent;
+      border: 1px solid var(--border-panel);
+      color: var(--text-muted);
+      padding: 3px 8px;
+      font-size: 10.5px;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .clear-history-btn:hover {
+      border-color: var(--alert-danger);
+      color: var(--alert-danger);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Return to Platform Navigation Bar -->
+  <div style="background: linear-gradient(90deg, #0c1022 0%, #151b38 100%); border: 1px solid #2a3b68; border-radius: 4px; padding: 10px 18px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 16px rgba(0,0,0,0.35);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="/" style="display: inline-flex; align-items: center; gap: 8px; color: #00f0ff; text-decoration: none; font-weight: 600; font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); padding: 5px 12px; border-radius: 3px; transition: all 0.2s ease;">
+        <span style="font-size: 14px;">&larr;</span> RETURN TO Q-FRAUDSHIELD PLATFORM
+      </a>
+      <span style="color: #7b85a6; font-size: 12px; font-family: 'IBM Plex Mono', monospace;">// OPERATIONAL CONSOLE MODE (STANDALONE)</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <button type="button" class="btn-generate-pdf-console" onclick="generatePdfReport()" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(0, 240, 255, 0.12); border: 1px solid #00f0ff; color: #00f0ff; padding: 4px 10px; border-radius: 3px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <span>GENERATE PDF</span>
+      </button>
+      <span style="color: #4fd1c5; font-size: 11px; font-family: 'IBM Plex Mono', monospace;">API CONNECTED: http://localhost:8000</span>
+      <span style="color: #e8a855; font-size: 11px; font-family: 'IBM Plex Mono', monospace;">QAIC UC-016</span>
+    </div>
+  </div>
+
+  <!-- Console Header Bar -->
+  <header class="console-header">
+    <div class="console-brand">
+      <span class="brand-badge mono">QAIC // UC016</span>
+      <div class="console-title">
+        <h1>Quantum Fraud Detection Laboratory Console</h1>
+        <p>QSVC (ZZFeatureMap, 6 Qubits) vs Classical SVM (RBF) &mdash; LangGraph Dual-Engine Orchestration</p>
+      </div>
+    </div>
+    <div class="telemetry-strip">
+      <div class="telemetry-item">
+        <span class="telemetry-label">Engine Telemetry</span>
+        <span class="telemetry-value live"><span class="led-dot"></span> OPERATIONAL</span>
+      </div>
+      <div class="telemetry-item">
+        <span class="telemetry-label">Quantum Circuit</span>
+        <span class="telemetry-value mono" style="color: var(--quantum);">6 QUBITS // reps=1</span>
+      </div>
+      <div class="telemetry-item">
+        <span class="telemetry-label">Preprocessor</span>
+        <span class="telemetry-value mono">MinMaxScaler([0, &pi;])</span>
+      </div>
+      <div class="telemetry-item">
+        <span class="telemetry-label">Combined Policy</span>
+        <span class="telemetry-value mono">CONSERVATIVE OR</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-grid">
+
+    <!-- ========================================================= -->
+    <!-- PART 6: PROMINENT BEFORE/AFTER TUNING STORY               -->
+    <!-- ========================================================= -->
+    <section class="instrument-panel tuning-section">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>METROLOGY &amp; TUNING DIAGNOSTIC: QSVC PERFORMANCE RECOVERY</span>
+        </div>
+        <div class="panel-tag">EXPERIMENT REPORT // MATCHED 200-SAMPLE COHORT</div>
+      </div>
+      <div class="panel-body">
+        <div class="tuning-container">
+          <div class="tuning-narrative">
+            <h2>The Angle-Encoding Scaling Discovery</h2>
+            <p>
+              In our initial baseline, QSVC scored <span class="highlight-text mono">ROC-AUC 0.5139</span> (near-random).
+              We diagnosed the mechanistic root cause: <span class="mono">ZZFeatureMap</span> encodes continuous tabular features directly into qubit rotation angles modulo \(2\pi\).
+            </p>
+            <p style="margin-top: 6px;">
+              StandardScaler produces unbounded values \((-\infty, +\infty)\), wrapping periodic angles and scrambling feature-space geometry.
+              Rescaling to <span class="mono" style="color: var(--classical);">MinMaxScaler([0, &pi;])</span> restored angle fidelity, recovering QSVC performance to <span class="highlight-text mono">0.9881 ROC-AUC</span>, within 0.6% of Classical SVM (<span class="mono" style="color: var(--classical);">0.9939</span>).
+            </p>
+            <div class="diagnostic-note">
+              <strong>Scientific Honesty Statement:</strong> No quantum advantage is claimed. Tuned QSVC achieves near-parity with classical SVM at this NISQ simulator scale, providing independent orthogonal signal for the combined policy.
+            </div>
+          </div>
+
+          <div class="tuning-gauges">
+            <!-- Pre-Tuning QSVC Gauge -->
+            <div class="gauge-track-container">
+              <div class="gauge-header">
+                <span class="gauge-name">
+                  <span>BEFORE TUNING: QSVC Baseline</span>
+                  <span class="gauge-specs">(StandardScaler, reps=2, linear)</span>
+                </span>
+                <span class="gauge-value mono" style="color: var(--text-muted);" id="val-auc-before">0.5139 AUC</span>
+              </div>
+              <div class="bar-shell">
+                <div class="bar-fill fill-before" style="width: 51.39%;"></div>
+              </div>
+              <div class="bar-ticks">
+                <span>0.50</span><span>0.60</span><span>0.70</span><span>0.80</span><span>0.90</span><span>1.00</span>
+              </div>
+            </div>
+
+            <!-- Tuned QSVC Gauge -->
+            <div class="gauge-track-container" style="border-color: rgba(232, 168, 85, 0.4);">
+              <div class="gauge-header">
+                <span class="gauge-name" style="color: var(--quantum);">
+                  <span>AFTER TUNING: Tuned QSVC</span>
+                  <span class="gauge-specs" style="color: var(--quantum-dim);">(MinMaxScaler([0,&pi;]), reps=1, linear)</span>
+                </span>
+                <span class="gauge-value mono" style="color: var(--quantum);" id="val-auc-after">0.9881 AUC</span>
+              </div>
+              <div class="bar-shell">
+                <div class="bar-fill fill-after" style="width: 98.81%;"></div>
+              </div>
+              <div class="bar-ticks">
+                <span>0.50</span><span>0.60</span><span>0.70</span><span>0.80</span><span>0.90</span><span>1.00</span>
+              </div>
+            </div>
+
+            <!-- Classical SVM Reference Gauge -->
+            <div class="gauge-track-container" style="border-color: rgba(79, 209, 197, 0.4);">
+              <div class="gauge-header">
+                <span class="gauge-name" style="color: var(--classical);">
+                  <span>CLASSICAL SVM: Benchmark Reference</span>
+                  <span class="gauge-specs" style="color: var(--classical-dim);">(RBF Kernel, Scikit-Learn)</span>
+                </span>
+                <span class="gauge-value mono" style="color: var(--classical);" id="val-auc-classical">0.9939 AUC</span>
+              </div>
+              <div class="bar-shell">
+                <div class="bar-fill fill-classical" style="width: 99.39%;"></div>
+              </div>
+              <div class="bar-ticks">
+                <span>0.50</span><span>0.60</span><span>0.70</span><span>0.80</span><span>0.90</span><span>1.00</span>
+              </div>
+            </div>
+
+            <div class="recovery-banner">
+              <span class="recovery-label">
+                <span>DIAGNOSTIC RECOVERY DELTA:</span>
+                <span class="mono" style="color: var(--text-primary);">0.5139 &rarr; 0.9881</span>
+              </span>
+              <span class="recovery-delta">+0.4742 ROC-AUC (+92.3% RECOVERY)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mid Section: 2 Columns (Scorer & ROC Analysis) -->
+    <div class="row-split">
+
+      <!-- ========================================================= -->
+      <!-- PART 4, 5, 8, 9: LIVE TRANSACTION SCORER & DECISION       -->
+      <!-- ========================================================= -->
+      <section class="instrument-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>LIVE TRANSACTION DIAGNOSTIC SCORER</span>
+          </div>
+          <div class="panel-tag">POST /score-transaction &bull; POST /score-agent</div>
+        </div>
+
+        <div class="panel-body">
+          <!-- Curated Presets -->
+          <div class="presets-bar" id="presets-container">
+            <span style="font-size: 11px; color: var(--text-muted); align-self: center; margin-right: 4px;">PRESETS:</span>
+            <button type="button" class="preset-btn" onclick="applyPreset('real_fraud', this)">
+              <span>Real Fraud #1</span>
+              <span class="tag-indicator fraud">FRAUD</span>
+            </button>
+            <button type="button" class="preset-btn" onclick="applyPreset('real_fraud_2', this)">
+              <span>Real Fraud #2</span>
+              <span class="tag-indicator fraud">FRAUD</span>
+            </button>
+            <button type="button" class="preset-btn" onclick="applyPreset('real_legit', this)">
+              <span>Normal Txn</span>
+              <span class="tag-indicator normal">NORMAL</span>
+            </button>
+            <button type="button" class="preset-btn borderline-btn" onclick="applyPreset('borderline', this)">
+              <span>Edge Case (Divergence Demo)</span>
+              <span class="tag-indicator edge">EDGE</span>
+            </button>
+          </div>
+
+
+          <!-- Feature Inputs (6 selected features) -->
+          <form id="scorer-form" onsubmit="event.preventDefault(); runScoring();">
+            <div class="features-grid">
+              <div class="feature-field">
+                <div class="feature-meta">
+                  <span>V17 [Q0]</span>
+                  <span>[0, &pi;]</span>
+                </div>
+                <input type="number" step="any" id="feat-V17" class="feature-input" value="2.3000" required>
+              </div>
+              <div class="feature-field">
+                <div class="feature-meta">
+                  <span>V12 [Q1]</span>
+                  <span>[0, &pi;]</span>
+                </div>
+                <input type="number" step="any" id="feat-V12" class="feature-input" value="2.5110" required>
+              </div>
+              <div class="feature-field">
+                <div class="feature-meta">
+                  <span>V14 [Q2]</span>
+                  <span>[0, &pi;]</span>
+                </div>
+                <input type="number" step="any" id="feat-V14" class="feature-input" value="1.8750" required>
+              </div>
+              <div class="feature-field">
+                <div class="feature-meta">
+                  <span>V10 [Q3]</span>
+                  <span>[0, &pi;]</span>
+                </div>
+                <input type="number" step="any" id="feat-V10" class="feature-input" value="1.6240" required>
+              </div>
+              <div class="feature-field">
+                <div class="feature-meta">
+                  <span>V16 [Q4]</span>
+                  <span>[0, &pi;]</span>
+                </div>
+                <input type="number" step="any" id="feat-V16" class="feature-input" value="2.4800" required>
+              </div>
+              <div class="feature-field">
+                <div class="feature-meta">
+                  <span>V11 [Q5]</span>
+                  <span>[0, &pi;]</span>
+                </div>
+                <input type="number" step="any" id="feat-V11" class="feature-input" value="1.0320" required>
+              </div>
+            </div>
+
+            <!-- Execution Options & Buttons -->
+            <div class="control-actions-row">
+              <div class="toggle-group">
+                <label class="custom-check">
+                  <input type="checkbox" id="chk-agent-trace" checked>
+                  <span>LangGraph Agent Trace Mode</span>
+                </label>
+                <label class="custom-check">
+                  <input type="checkbox" id="chk-scaled" checked>
+                  <span>Pre-Scaled (MinMaxScaler)</span>
+                </label>
+              </div>
+              <div class="action-btn-group">
+                <button type="button" class="reset-btn" onclick="resetForm()">Reset</button>
+                <button type="submit" class="exec-btn" id="btn-submit">
+                  <span id="btn-spinner" style="display:none;">&bull;</span>
+                  <span>EVALUATE TRANSACTION</span>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <!-- Annunciator / Results Display -->
+          <div class="decision-display" id="results-display">
+            <div class="channels-split">
+              <!-- Channel 1: Quantum QSVC -->
+              <div class="channel-box channel-quantum">
+                <div class="channel-label">
+                  <span>CH-01: QUANTUM KERNEL (QSVC)</span>
+                  <span>6 QUBITS</span>
+                </div>
+                <div class="channel-score-row">
+                  <span class="channel-value" id="res-quantum-score">+0.9230</span>
+                  <span class="verdict-tag verdict-fraud" id="res-quantum-label">FRAUD</span>
+                </div>
+                <div class="channel-sub" id="res-quantum-sub">Kernel Decision Margin (Sign &gt; 0 &rarr; FRAUD)</div>
+              </div>
+
+              <!-- Channel 2: Classical SVM -->
+              <div class="channel-box channel-classical">
+                <div class="channel-label">
+                  <span>CH-02: CLASSICAL BASELINE (SVM)</span>
+                  <span>RBF KERNEL</span>
+                </div>
+                <div class="channel-score-row">
+                  <span class="channel-value" id="res-classical-score">38.56%</span>
+                  <span class="verdict-tag verdict-legit" id="res-classical-label">LEGIT</span>
+                </div>
+                <div class="channel-sub" id="res-classical-sub">Posterior Fraud Probability (Threshold 50%)</div>
+              </div>
+            </div>
+
+            <!-- Agreement / Divergence Status Banner -->
+            <div class="agreement-indicator divergence" id="res-agreement-box">
+              <span id="res-agreement-text">STATUS: DIVERGENCE DETECTED (NON-IDENTICAL SIGNALS)</span>
+              <span class="mono" id="res-latency">LATENCY: 742 ms</span>
+            </div>
+
+            <!-- Final Combined Decision (OR Policy) -->
+            <div class="final-decision-box flagged" id="res-final-box">
+              <div class="final-title-group">
+                <span class="final-eyebrow">FINAL COMBINED DECISION</span>
+                <span class="final-status" id="res-final-decision">DECISION: FLAGGED</span>
+              </div>
+              <span class="policy-tag">OR POLICY (FLAG IF EITHER FLAGS)</span>
+            </div>
+
+            <div class="decision-explanation" id="res-explanation">
+              Quantum model: FRAUD. Classical model: LEGIT (disagree). Based on features [V17=2.30, V12=2.51, V14=1.88, V10=1.62, V16=2.48, V11=1.03].
+            </div>
+
+            <!-- PART 8: Voice Explanations (Browser-native Web Speech API) -->
+            <div class="voice-controls-row">
+              <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">VOICE DIAGNOSTICS:</span>
+              <button type="button" class="voice-btn quantum-voice" id="btn-voice-quantum" onclick="speakExplanation('quantum')">
+                <span>&#128362; Explain Quantum</span>
+              </button>
+              <button type="button" class="voice-btn classical-voice" id="btn-voice-classical" onclick="speakExplanation('classical')">
+                <span>&#128362; Explain Classical</span>
+              </button>
+              <button type="button" class="voice-btn" id="btn-voice-stop" onclick="stopSpeech()" style="display:none; color: var(--alert-danger); border-color: var(--alert-danger);">
+                <span>&#9632; Stop Audio</span>
+              </button>
+              <span class="speech-status-msg" id="speech-status">Browser-Native Speech Synthesis (Zero External Cloud)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- PART 7: ROC COMPARISON CHART                             -->
+      <!-- ========================================================= -->
+      <section class="instrument-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>ROC DISCRIMINATION PERFORMANCE METRICS</span>
+          </div>
+          <div class="panel-tag">PRECOMPUTED COHORT // GET /roc-curve</div>
+        </div>
+
+        <div class="chart-panel-body">
+          <div class="chart-container-box">
+            <canvas id="rocCanvas"></canvas>
+          </div>
+
+          <!-- Metrology Table -->
+          <table class="roc-metrics-table">
+            <thead>
+              <tr>
+                <th>CLASSIFIER SYSTEM</th>
+                <th>SUBSTRATE / METHOD</th>
+                <th>ROC-AUC</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="curve-dot" style="background: var(--classical);"></span>Classical SVM</td>
+                <td>RBF Kernel (CPU / scikit-learn)</td>
+                <td style="color: var(--classical);" id="tbl-auc-classical">0.9939</td>
+                <td style="color: var(--classical);">BENCHMARK LEADER</td>
+              </tr>
+              <tr>
+                <td><span class="curve-dot" style="background: var(--quantum);"></span>Tuned QSVC</td>
+                <td>6-Qubit ZZFeatureMap (Statevector)</td>
+                <td style="color: var(--quantum);" id="tbl-auc-quantum">0.9881</td>
+                <td style="color: var(--quantum);">COMPETITIVE PARITY</td>
+              </tr>
+              <tr>
+                <td><span class="curve-dot" style="background: var(--text-secondary);"></span>Pre-Tuning QSVC</td>
+                <td>StandardScaler Mismatch (reps=2)</td>
+                <td style="color: var(--text-muted);" id="tbl-auc-pretuning">0.5139</td>
+                <td style="color: var(--text-muted);">NEAR-RANDOM</td>
+              </tr>
+              <tr>
+                <td><span class="curve-dot" style="background: #3E4768;"></span>Random Baseline</td>
+                <td>Chance Diagonal (\(y = x\))</td>
+                <td style="color: #616B91;">0.5000</td>
+                <td style="color: #616B91;">NULL REFERENCE</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- PART 10: LANGGRAPH AGENT EXECUTION TRACE                  -->
+    <!-- ========================================================= -->
+    <section class="instrument-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>LANGGRAPH AGENT REASONING TRACE</span>
+        </div>
+        <div class="panel-tag">POST /score-agent &bull; 4-NODE PIPELINE</div>
+      </div>
+      <div class="panel-body">
+        <div class="agent-trace-steps" id="agent-trace-container">
+          <!-- Step 1: Ingest -->
+          <div class="trace-node-card">
+            <div class="node-header">
+              <span>[01/04] INGEST</span>
+              <span class="node-elapsed" id="trace-time-ingest">0.24 ms</span>
+            </div>
+            <div class="node-desc" id="trace-desc-ingest">
+              Validated 6 normalized features (V17, V12, V14, V10, V16, V11). Zero leakage.
+            </div>
+            <div class="node-output-json" id="trace-out-ingest">{"features": [2.3, 2.511, 1.875, 1.624, 2.48, 1.032]}</div>
+          </div>
+
+          <!-- Step 2: Quantum Score -->
+          <div class="trace-node-card" style="border-left: 3px solid var(--quantum);">
+            <div class="node-header">
+              <span style="color: var(--quantum);">[02/04] QUANTUM_SCORE</span>
+              <span class="node-elapsed" id="trace-time-quantum">720.50 ms</span>
+            </div>
+            <div class="node-desc" id="trace-desc-quantum">
+              QSVC Kernel eval (6 qubits, ZZFeatureMap, reps=1) &rarr; Margin: +0.9230
+            </div>
+            <div class="node-output-json" id="trace-out-quantum">{"quantum_label": "FRAUD", "quantum_score": 0.923}</div>
+          </div>
+
+          <!-- Step 3: Classical Score -->
+          <div class="trace-node-card" style="border-left: 3px solid var(--classical);">
+            <div class="node-header">
+              <span style="color: var(--classical);">[03/04] CLASSICAL_SCORE</span>
+              <span class="node-elapsed" id="trace-time-classical">2.10 ms</span>
+            </div>
+            <div class="node-desc" id="trace-desc-classical">
+              Classical SVM RBF eval &rarr; Fraud Prob: 38.56% (Below 50% threshold)
+            </div>
+            <div class="node-output-json" id="trace-out-classical">{"classical_label": "LEGIT", "classical_score": 0.3856}</div>
+          </div>
+
+          <!-- Step 4: Decide & Report -->
+          <div class="trace-node-card">
+            <div class="node-header">
+              <span>[04/04] DECIDE_AND_REPORT</span>
+              <span class="node-elapsed" id="trace-time-decide">0.85 ms</span>
+            </div>
+            <div class="node-desc" id="trace-desc-decide">
+              Policy decision: FLAGGED (conservative OR: flag if either flags).
+            </div>
+            <div class="node-output-json" id="trace-out-decide">{"decision": "FLAGGED", "source": "template_fallback"}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- PART 11: AUDIT TRAIL / RECENT TRANSACTION HISTORY         -->
+    <!-- ========================================================= -->
+    <section class="instrument-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>TRANSACTION AUDIT TRAIL &amp; AUDIT LOG</span>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button type="button" class="clear-history-btn btn-generate-pdf-console" onclick="generatePdfReport()" style="color: var(--quantum); border-color: var(--quantum);">Export PDF</button>
+          <button type="button" class="clear-history-btn" onclick="fetchHistory()">Refresh</button>
+          <button type="button" class="clear-history-btn" onclick="clearHistoryLog()">Clear Log</button>
+          <div class="panel-tag">SQLITE AUDIT STORE &bull; IN-MEMORY FRONTEND CACHE</div>
+        </div>
+      </div>
+      <div class="panel-body" style="padding: 0;">
+        <div class="history-table-container">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>TIMESTAMP</th>
+                <th>QUANTUM QSVC</th>
+                <th>CLASSICAL SVM</th>
+                <th>DECISION</th>
+                <th>AGREEMENT</th>
+                <th>LATENCY</th>
+                <th>FEATURE VECTOR</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              <tr>
+                <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 18px;">
+                  Awaiting transactions. Click 'EVALUATE TRANSACTION' or load a preset above.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer-telemetry">
+    <div>QAIC UC016 &bull; Quantum Machine Learning Fraud Detection Laboratory Console</div>
+    <div class="mono">Architecture: Scikit-Learn Classical Baseline &bull; Qiskit ML FidelityQuantumKernel &bull; LangGraph</div>
+    <div>Zero client-side storage cache. State held strictly in memory.</div>
+  </footer>
+
+  <!-- Application Logic (Vanilla JS, Zero Framework Overhead) -->
+  <script>
+    // Global In-Memory State (NO client storage cache)
+
+    let samplePresets = {};
+    let currentScore = {
+      quantum_score: 0.9230,
+      quantum_label: "FRAUD",
+      classical_score: 0.3856,
+      classical_label: "LEGIT",
+      decision: "FLAGGED",
+      explanation: "Quantum model: FRAUD. Classical model: LEGIT (disagree). Based on features [V17=2.30, V12=2.51, V14=1.88, V10=1.62, V16=2.48, V11=1.03].",
+      latency_seconds: 0.742,
+      features: [2.30, 2.511, 1.875, 1.624, 2.48, 1.032]
+    };
+    let rocChartInstance = null;
+
+    // Feature keys in canonical order
+    const featureKeys = ["V17", "V12", "V14", "V10", "V16", "V11"];
+
+    // Initialize on DOM ready
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchPresets();
+      fetchRocCurveData();
+      fetchHistory();
+    });
+
+    // 1. Load Presets from GET /samples
+    async function fetchPresets() {
+      try {
+        const res = await fetch("/samples");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        samplePresets = await res.json();
+      } catch (err) {
+        console.warn("[presets] Failed to fetch /samples, using verified defaults", err);
+        samplePresets = {
+          "real_fraud": {
+            "title": "Real Fraud #1",
+            "tag": "FRAUD",
+            "features": [-0.133, 0.515, 0.658, 0.842, 0.022, 2.228],
+            "expected_decision": "FLAGGED",
+            "description": "Verified fraud case from Kaggle test set."
+          },
+          "real_fraud_2": {
+            "title": "Real Fraud #2",
+            "tag": "FRAUD",
+            "features": [1.824, 2.061, 1.505, 1.49, 1.674, 1.33],
+            "expected_decision": "FLAGGED",
+            "description": "Verified fraud case with high model agreement."
+          },
+          "real_legit": {
+            "title": "Normal Transaction",
+            "tag": "NORMAL",
+            "features": [2.203, 2.727, 2.26, 1.517, 2.071, 1.283],
+            "expected_decision": "CLEARED",
+            "description": "Verified legitimate transaction from the test set."
+          },
+          "borderline": {
+            "title": "Edge Case (Model Divergence)",
+            "tag": "EDGE",
+            "features": [2.3, 2.511, 1.875, 1.624, 2.48, 1.032],
+            "expected_decision": "FLAGGED",
+            "description": "Real fraud case where models genuinely diverge."
+          }
+        };
+      }
+    }
+
+    // Apply Preset to input fields
+    function applyPreset(key, btnEl) {
+      const p = samplePresets[key];
+      if (!p || !p.features) return;
+
+      // Update inputs
+      featureKeys.forEach((fk, idx) => {
+        const inp = document.getElementById(`feat-${fk}`);
+        if (inp && p.features[idx] !== undefined) {
+          inp.value = p.features[idx];
+        }
+      });
+
+      // Highlight active button
+      document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+      if (btnEl) {
+        btnEl.classList.add("active");
+      } else if (typeof event !== 'undefined' && event && event.currentTarget) {
+        event.currentTarget.classList.add("active");
+      }
+
+      // Auto-run scoring on preset selection for immediate feedback
+      runScoring();
+    }
+
+
+    // Reset Form to initial default values
+    function resetForm() {
+      applyPreset("borderline");
+    }
+
+    // Run Scoring Action
+    async function runScoring() {
+      const btn = document.getElementById("btn-submit");
+      const spinner = document.getElementById("btn-spinner");
+      const isAgentTrace = document.getElementById("chk-agent-trace").checked;
+      const isScaled = document.getElementById("chk-scaled").checked;
+
+      // Collect features
+      const features = featureKeys.map(fk => {
+        const el = document.getElementById(`feat-${fk}`);
+        return parseFloat(el.value || "0");
+      });
+
+      btn.disabled = true;
+      spinner.style.display = "inline";
+
+      const endpoint = isAgentTrace ? "/score-agent" : "/score-transaction";
+      const payload = {
+        features: features,
+        scaled: isScaled
+      };
+
+      try {
+        const t0 = performance.now();
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          alert("Scoring Error: " + (errData.detail || res.statusText));
+          return;
+        }
+
+        const data = await res.json();
+        currentScore = data;
+
+        // Render scoring results
+        renderScoringResults(data);
+
+        // If agent trace present, render trace cards
+        if (data.trace && data.trace.length > 0) {
+          renderAgentTrace(data.trace);
+        }
+
+        // Refresh history log
+        fetchHistory();
+      } catch (err) {
+        console.error("Network or scoring failure:", err);
+        alert("Scoring connection failure: " + err.message);
+      } finally {
+        btn.disabled = false;
+        spinner.style.display = "none";
+      }
+    }
+
+    // Render Scoring Result Panels
+    function renderScoringResults(data) {
+      // Quantum QSVC readout
+      const qScoreEl = document.getElementById("res-quantum-score");
+      const qLabelEl = document.getElementById("res-quantum-label");
+      const qMargin = data.quantum_score;
+      qScoreEl.textContent = (qMargin >= 0 ? "+" : "") + qMargin.toFixed(4);
+
+      if (data.quantum_label === "FRAUD") {
+        qLabelEl.textContent = "FRAUD";
+        qLabelEl.className = "verdict-tag verdict-fraud";
+      } else {
+        qLabelEl.textContent = "LEGIT";
+        qLabelEl.className = "verdict-tag verdict-legit";
+      }
+
+      // Classical SVM readout
+      const cScoreEl = document.getElementById("res-classical-score");
+      const cLabelEl = document.getElementById("res-classical-label");
+      const cProb = data.classical_score * 100;
+      cScoreEl.textContent = cProb.toFixed(2) + "%";
+
+      if (data.classical_label === "FRAUD") {
+        cLabelEl.textContent = "FRAUD";
+        cLabelEl.className = "verdict-tag verdict-fraud";
+      } else {
+        cLabelEl.textContent = "LEGIT";
+        cLabelEl.className = "verdict-tag verdict-legit";
+      }
+
+      // Agreement / Divergence banner
+      const agreementBox = document.getElementById("res-agreement-box");
+      const agreementText = document.getElementById("res-agreement-text");
+      const latencyEl = document.getElementById("res-latency");
+
+      const agree = (data.quantum_label === data.classical_label);
+      if (agree) {
+        agreementBox.className = "agreement-indicator convergence";
+        agreementText.textContent = `STATUS: CONVERGENCE (MODELS AGREE ON ${data.quantum_label})`;
+      } else {
+        agreementBox.className = "agreement-indicator divergence";
+        agreementText.textContent = `STATUS: DIVERGENCE DETECTED (QSVC: ${data.quantum_label} vs SVM: ${data.classical_label})`;
+      }
+
+      const latencyMs = Math.round((data.latency_seconds || 0) * 1000);
+      latencyEl.textContent = `LATENCY: ${latencyMs} ms`;
+
+      // Final Combined Decision (OR Policy: Flag if either flags)
+      const finalBox = document.getElementById("res-final-box");
+      const finalDecisionEl = document.getElementById("res-final-decision");
+
+      if (data.decision === "FLAGGED") {
+        finalBox.className = "final-decision-box flagged";
+        finalDecisionEl.textContent = "DECISION: FLAGGED";
+      } else {
+        finalBox.className = "final-decision-box cleared";
+        finalDecisionEl.textContent = "DECISION: CLEARED";
+      }
+
+      // Explanation
+      document.getElementById("res-explanation").textContent = data.explanation || "No explanation provided.";
+    }
+
+    // Render LangGraph Trace
+    function renderAgentTrace(traceSteps) {
+      traceSteps.forEach(step => {
+        const node = step.node;
+        const timeEl = document.getElementById(`trace-time-${node === "quantum_score" ? "quantum" : (node === "classical_score" ? "classical" : (node === "decide_and_report" ? "decide" : "ingest"))}`);
+        const descEl = document.getElementById(`trace-desc-${node === "quantum_score" ? "quantum" : (node === "classical_score" ? "classical" : (node === "decide_and_report" ? "decide" : "ingest"))}`);
+        const outEl = document.getElementById(`trace-out-${node === "quantum_score" ? "quantum" : (node === "classical_score" ? "classical" : (node === "decide_and_report" ? "decide" : "ingest"))}`);
+
+        if (timeEl) timeEl.textContent = `${step.elapsed_ms.toFixed(2)} ms`;
+        if (descEl) descEl.textContent = step.description;
+        if (outEl) outEl.textContent = JSON.stringify(step.output);
+      });
+    }
+
+    // 2. Fetch and Render ROC Curve from GET /roc-curve
+    async function fetchRocCurveData() {
+      try {
+        const res = await fetch("/roc-curve");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        renderRocChart(data);
+      } catch (err) {
+        console.warn("[roc] Error fetching /roc-curve, using fallback dataset", err);
+      }
+    }
+
+    function renderRocChart(rocData) {
+      const ctx = document.getElementById("rocCanvas").getContext("2d");
+      if (rocChartInstance) {
+        rocChartInstance.destroy();
+      }
+
+      const curves = rocData.curves;
+
+      // Update table AUC elements
+      if (curves.classical_svm) document.getElementById("tbl-auc-classical").textContent = curves.classical_svm.auc.toFixed(4);
+      if (curves.qsvc_tuned) document.getElementById("tbl-auc-quantum").textContent = curves.qsvc_tuned.auc.toFixed(4);
+      if (curves.qsvc_pretuning) document.getElementById("tbl-auc-pretuning").textContent = curves.qsvc_pretuning.auc.toFixed(4);
+
+      const datasets = [
+        {
+          label: `Classical SVM (AUC: ${curves.classical_svm.auc.toFixed(4)})`,
+          data: curves.classical_svm.points,
+          borderColor: "#4FD1C5",
+          backgroundColor: "rgba(79, 209, 197, 0.04)",
+          borderWidth: 2.5,
+          borderDash: [],
+          pointRadius: 0,
+          fill: false,
+          tension: 0.1
+        },
+        {
+          label: `Tuned QSVC (AUC: ${curves.qsvc_tuned.auc.toFixed(4)})`,
+          data: curves.qsvc_tuned.points,
+          borderColor: "#E8A855",
+          backgroundColor: "rgba(232, 168, 85, 0.04)",
+          borderWidth: 2.5,
+          borderDash: [],
+          pointRadius: 0,
+          fill: false,
+          tension: 0.1
+        },
+        {
+          label: `Pre-Tuning QSVC (AUC: ${curves.qsvc_pretuning.auc.toFixed(4)})`,
+          data: curves.qsvc_pretuning.points,
+          borderColor: "#7B85A6",
+          borderWidth: 1.8,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false,
+          tension: 0.1
+        },
+        {
+          label: `Random Classifier (AUC: 0.5000)`,
+          data: curves.random_baseline.points,
+          borderColor: "#3E4768",
+          borderWidth: 1.2,
+          borderDash: [3, 3],
+          pointRadius: 0,
+          fill: false,
+          tension: 0
+        }
+      ];
+
+      rocChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { datasets: datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 600 },
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#E9EBF5',
+                font: { family: 'IBM Plex Mono', size: 10.5 },
+                boxWidth: 14,
+                padding: 10
+              }
+            },
+            tooltip: {
+              backgroundColor: '#1B2140',
+              borderColor: '#262E54',
+              borderWidth: 1,
+              titleColor: '#E9EBF5',
+              bodyColor: '#7B85A6',
+              titleFont: { family: 'IBM Plex Mono' },
+              bodyFont: { family: 'IBM Plex Mono' },
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: FPR=${context.parsed.x.toFixed(3)}, TPR=${context.parsed.y.toFixed(3)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom',
+              min: 0,
+              max: 1.0,
+              title: {
+                display: true,
+                text: 'False Positive Rate (1 - Specificity)',
+                color: '#7B85A6',
+                font: { family: 'IBM Plex Mono', size: 10 }
+              },
+              ticks: {
+                color: '#535C7E',
+                font: { family: 'IBM Plex Mono', size: 9.5 },
+                stepSize: 0.2
+              },
+              grid: {
+                color: '#1A213B'
+              }
+            },
+            y: {
+              min: 0,
+              max: 1.0,
+              title: {
+                display: true,
+                text: 'True Positive Rate (Sensitivity / Recall)',
+                color: '#7B85A6',
+                font: { family: 'IBM Plex Mono', size: 10 }
+              },
+              ticks: {
+                color: '#535C7E',
+                font: { family: 'IBM Plex Mono', size: 9.5 },
+                stepSize: 0.2
+              },
+              grid: {
+                color: '#1A213B'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // 3. Browser-Native Web Speech API (Zero External TTS Services)
+    function stopSpeech() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      const qBtn = document.getElementById("btn-voice-quantum");
+      const cBtn = document.getElementById("btn-voice-classical");
+      const stopBtn = document.getElementById("btn-voice-stop");
+      const statusEl = document.getElementById("speech-status");
+
+      qBtn.classList.remove("speaking");
+      cBtn.classList.remove("speaking");
+      stopBtn.style.display = "none";
+      statusEl.textContent = "Audio stopped.";
+    }
+
+    function speakExplanation(modelType) {
+      if (!('speechSynthesis' in window)) {
+        alert("Web Speech API is not supported in this browser.");
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const qBtn = document.getElementById("btn-voice-quantum");
+      const cBtn = document.getElementById("btn-voice-classical");
+      const stopBtn = document.getElementById("btn-voice-stop");
+      const statusEl = document.getElementById("speech-status");
+
+      qBtn.classList.remove("speaking");
+      cBtn.classList.remove("speaking");
+
+      let speechText = "";
+
+      if (modelType === "quantum") {
+        qBtn.classList.add("speaking");
+        stopBtn.style.display = "inline-flex";
+        statusEl.textContent = "Playing Quantum diagnostic synthesis...";
+
+        const margin = currentScore.quantum_score;
+        const label = currentScore.quantum_label;
+        const signText = margin > 0 ? "positive margin" : "negative margin";
+
+        speechText = `Quantum Support Vector Classifier diagnostic evaluation. ` +
+          `Six classical features were mapped into a sixty-four dimensional Hilbert space via a six qubit Z Z Feature Map with reps equals one. ` +
+          `The quantum kernel evaluated global inner product similarity between this transaction and the balanced support vectors. ` +
+          `The model produced a ${signText} of ${margin.toFixed(3)}, classifying the transaction as ${label}. ` +
+          `Quantum kernel methods evaluate non-linear geometric similarity in quantum state space rather than additive linear feature importances.`;
+      } else {
+        cBtn.classList.add("speaking");
+        stopBtn.style.display = "inline-flex";
+        statusEl.textContent = "Playing Classical diagnostic synthesis...";
+
+        const prob = (currentScore.classical_score * 100).toFixed(1);
+        const label = currentScore.classical_label;
+        const feats = currentScore.features ? currentScore.features.slice(0, 3).map(v => v.toFixed(2)).join(", ") : "";
+
+        speechText = `Classical Support Vector Machine diagnostic evaluation. ` +
+          `Using a radial basis function kernel on normalized input features, ` +
+          `the classical baseline computed a fraud posterior probability of ${prob} percent. ` +
+          `Based on the fifty percent decision boundary, the classical verdict is ${label}. ` +
+          `Key feature coordinates include V17, V12, and V14 at values ${feats}.`;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(speechText);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      utterance.onend = () => {
+        qBtn.classList.remove("speaking");
+        cBtn.classList.remove("speaking");
+        stopBtn.style.display = "none";
+        statusEl.textContent = "Diagnostic audio playback completed.";
+      };
+
+      utterance.onerror = (e) => {
+        console.warn("[speech] Speech synthesis error:", e);
+        qBtn.classList.remove("speaking");
+        cBtn.classList.remove("speaking");
+        stopBtn.style.display = "none";
+        statusEl.textContent = "Speech synthesis terminated.";
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // 4. Fetch History from GET /history
+    async function fetchHistory() {
+      try {
+        const res = await fetch("/history?limit=15");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const rows = await res.json();
+        renderHistoryTable(rows);
+      } catch (err) {
+        console.warn("[history] Failed to fetch /history:", err);
+      }
+    }
+
+    function renderHistoryTable(rows) {
+      const tbody = document.getElementById("history-tbody");
+      if (!rows || rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 18px;">No transactions scored yet in audit log.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => {
+        const dateStr = r.timestamp ? new Date(r.timestamp * 1000).toLocaleTimeString() : "--";
+        const qScore = typeof r.quantum_score === 'number' ? (r.quantum_score >= 0 ? "+" : "") + r.quantum_score.toFixed(3) : "--";
+        const cScore = typeof r.classical_score === 'number' ? (r.classical_score * 100).toFixed(1) + "%" : "--";
+        const dec = r.decision || "CLEARED";
+        const isFlagged = dec === "FLAGGED";
+        const latencyStr = r.latency_seconds ? `${Math.round(r.latency_seconds * 1000)}ms` : "--";
+
+        let parsedFeats = r.features;
+        if (typeof parsedFeats === "string") {
+          try {
+            const arr = JSON.parse(parsedFeats);
+            parsedFeats = arr.map(n => Number(n).toFixed(2)).join(", ");
+          } catch (e) {}
+        } else if (Array.isArray(parsedFeats)) {
+          parsedFeats = parsedFeats.map(n => Number(n).toFixed(2)).join(", ");
+        }
+
+        const qFlag = (typeof r.quantum_score === 'number' && r.quantum_score > 0);
+        const cFlag = (typeof r.classical_score === 'number' && r.classical_score >= 0.5);
+        const agreement = (qFlag === cFlag)
+          ? `<span style="color: var(--classical);">AGREE</span>`
+          : `<span style="color: var(--quantum);">DIVERGE</span>`;
+
+        return `
+          <tr>
+            <td style="color: var(--text-muted);">#${r.id}</td>
+            <td style="color: var(--text-muted);">${dateStr}</td>
+            <td style="color: var(--quantum); font-weight: 500;">${qScore}</td>
+            <td style="color: var(--classical); font-weight: 500;">${cScore}</td>
+            <td>
+              <span class="tag-indicator ${isFlagged ? 'fraud' : 'normal'}">${dec}</span>
+            </td>
+            <td>${agreement}</td>
+            <td style="color: var(--text-muted);">${latencyStr}</td>
+            <td style="color: var(--text-muted); font-size: 10px;" title="${parsedFeats}">[${parsedFeats}]</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function clearHistoryLog() {
+      if (!confirm("Clear all recorded transaction audit logs from SQLite?")) return;
+      try {
+        const res = await fetch("/history", { method: "DELETE" });
+        if (res.ok) {
+          fetchHistory();
+        }
+      } catch (err) {
+        console.error("Failed to clear history:", err);
+      }
+    }
+
+    async function generatePdfReport() {
+      const btns = document.querySelectorAll(".btn-generate-pdf-console");
+      btns.forEach(btn => {
+        btn.disabled = true;
+        btn.dataset.origText = btn.innerHTML;
+        btn.innerHTML = `<span>GENERATING...</span>`;
+      });
+      try {
+        const res = await fetch("/generate-report");
+        if (!res.ok) throw new Error("Failed to generate PDF: " + res.statusText);
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = "quantum_fraud_report.pdf";
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      } catch (err) {
+        console.error("[report] PDF generation error:", err);
+        alert("Failed to generate PDF report. Please verify API is reachable.");
+      } finally {
+        btns.forEach(btn => {
+          btn.disabled = false;
+          if (btn.dataset.origText) btn.innerHTML = btn.dataset.origText;
+        });
+      }
+    }
+  </script>
+</body>
+</html>
