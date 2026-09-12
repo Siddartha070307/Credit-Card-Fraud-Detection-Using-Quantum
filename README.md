@@ -165,3 +165,8 @@ quantum-fraud-detection/
 4. **Live Demo**: Single-transaction scoring for low latency (~0.2-0.9s), with full 4-node agent execution trace.
 5. **Honest Benchmark Numbers**: QSVC vs Classical SVM on matched 200-sample test set (Classical SVM currently leads in simulator regime; LangGraph uses conservative policy flagging if either alerts).
 6. **Real-World Extension**: Ties to UC021 (UPI-scale real-time fraud defence) in the same QAIC compendium.
+
+
+## 🚀 Live Demo
+
+https://credit-card-fraud-detection-using-quantum.onrender.com
